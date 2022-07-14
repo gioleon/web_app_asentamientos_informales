@@ -1,0 +1,6 @@
+seaborn
+dash
+dash-bootstrap-components
+Flask==2.1.1
+pandas
+plotly
