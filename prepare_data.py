@@ -7,6 +7,31 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
+def rename_cols(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    This function renames the columns
+    of the dataframe.
+    """
+    cols_to_rename = [
+        "sector",
+        "codigo_vivienda",
+        "n_pisos",
+        "tipo_vivienda",
+        "n_espacio_dormitorios_noche",
+        "general_vivienda",
+        "servicios_facturas",
+        "acueducto_24/7",
+        'energia_24/7',
+        "genero_responsable",
+        "diplomas_responsable",
+        'n_hogares_vivienda'
+    ]
+
+    df.columns = cols_to_rename
+
+    return df
+
+
 def load_data() -> pd.DataFrame:
     """
     This function read the csv file
@@ -41,36 +66,10 @@ def load_data() -> pd.DataFrame:
     df = df.rename(lambda x : str(x).lower(), axis = 1)
     df = df[cols].drop_duplicates()
 
-    return  df
+    return  rename_cols(df)
 
 
-def rename_cols(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    This function renames the columns
-    of the dataframe.
-    """
-    cols_to_rename = [
-        "sector",
-        "codigo_vivienda",
-        "n_pisos",
-        "tipo_vivienda",
-        "n_espacio_dormitorios_noche",
-        "general_vivienda",
-        "servicios_facturas",
-        "acueducto_24/7",
-        'energia_24/7',
-        "genero_responsable",
-        "diplomas_responsable",
-        'n_hogares_vivienda'
-    ]
-
-    df.columns = cols_to_rename
-
-    return df
-
-
-df = rename_cols(load_data())
-df.shape
+df = load_data()
 
 
 def graph_servicios_facturados(sector = "all"):
@@ -89,7 +88,12 @@ def graph_servicios_facturados(sector = "all"):
         lambda x: len(x.split())
     ).sort_values().index[-1]
 
-    cols = servicios_facturas.loc[index_cols].split(maxsplit = 5)
+    if "recolección de basuras" in servicios_facturas[index_cols]:
+        cols = " ".join(servicios_facturas.loc[index_cols].split(
+            "recolección de basuras"
+        )).replace("  ", " ").split() + ["recolección de basuras"]
+    else:
+        cols = servicios_facturas.loc[index_cols].split()
 
     df_servicios = pd.DataFrame(
         columns = cols + ["ninguno"],
@@ -98,11 +102,21 @@ def graph_servicios_facturados(sector = "all"):
 
     dict_temp = {}
     for i in range(servicios_facturas.shape[0]):
-        dict_temp[df.codigo_vivienda.iloc[i]] = np.array(
-            pd.Series(cols+["ninguno"]).isin(
-                servicios_facturas.iloc[i].split(maxsplit=5)
-            )
-        )*1
+        if "recolección de basuras" in servicios_facturas.iloc[i]:
+            dict_temp[df.codigo_vivienda.iloc[i]] = np.array(
+                pd.Series(cols+["ninguno"]).isin(
+                    " ".join(servicios_facturas.iloc[i].split(
+                        "recolección de basuras"
+                    )).replace("  ", " ").split() + ["recolección de basuras"]
+                )
+            )*1
+        else:
+            dict_temp[df.codigo_vivienda.iloc[i]] = np.array(
+                 pd.Series(cols+["ninguno"]).isin(
+                    servicios_facturas.iloc[i].split()
+                )
+            )*1
+
 
     services_df = pd.DataFrame.from_dict(
         dict_temp,
@@ -113,4 +127,6 @@ def graph_servicios_facturados(sector = "all"):
     return services_df
 
 
-graph_servicios_facturados().sum(axis = 0)
+graph_servicios_facturados("Nuevo Israel").drop("ninguno", axis = 1)
+
+df.servicios_facturas.apply(lambda x: len(x)).sort_values()
