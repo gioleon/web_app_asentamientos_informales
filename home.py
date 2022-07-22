@@ -7,7 +7,7 @@ from dash import Dash, callback, html, dcc, dash_table, Input, Output, State, MA
 import dash_bootstrap_components as dbc
 
 from prepare_data import graph_servicios_facturados, load_data
-from default_graphics import default_servicios_facturas, graph_sector
+from default_graphics import servicios_facturas, graph_sector, graph_n_pisos
 
 df = load_data() # complete dataframe
 
@@ -35,14 +35,21 @@ app.layout = dbc.Container(
                         options=[{"label": i, "value": i}
                                   for i in df.sector.unique()],
                         value="all",
-                        placeholder = "All"
+                        placeholder = "All",
+                        style={"width": "85%"}
                      )
                 ]),
                 dcc.Graph(
                     id="pct_servicios_graph",
-                    figure=default_servicios_facturas()
+                    figure=servicios_facturas()
                 )
-        ])
+        ]),
+        dbc.Row(
+            dcc.Graph(
+                id="graph_pisos",
+                figure=graph_n_pisos()
+            ),
+        )
     ]
 )
 
@@ -51,40 +58,16 @@ app.layout = dbc.Container(
     Output(component_id="pct_servicios_graph", component_property="figure"),
     Input(component_id="pct_servicios_sector", component_property="value")
 )
-def servicios_facturas(sector):
-    df_services = graph_servicios_facturados(sector)
-
-    fig = make_subplots(
-        rows = 1, cols = 2,
-        subplot_titles = [
-            "Porcentaje de servicios públicos",
-            "Cantidad servicios públicos"
-        ]
-    )
-    fig.add_bar(
-        x = df_services.columns,
-        y = (df_services.sum(axis = 0)/df_services.shape[0]).values,
-        row = 1, col = 1
-    )
-
-    fig.add_bar(
-        x = df_services.drop("ninguno", axis=1).sum(axis=1).value_counts().index,
-        y = df_services.drop("ninguno", axis=1).sum(axis=1).value_counts().values,
-        row = 1, col = 2
-    )
-
-    fig.update_layout(
-        showlegend=False,
-        title = go.layout.Title(
-            text = "Servicios públicos presentes en asentamientos informales"
-            + f" sector: {sector}<br>"
-            + f"<sup><b>{df_services.shape[0]} registros</sup><b>"
-        )
-    )
-
-    return fig
+def graph_servicios_facturas(sector):
+    return servicios_facturas(sector)
 
 
+@app.callback(
+    Output(component_id="graph_pisos", component_property="figure"),
+    Input(component_id="pct_servicios_sector", component_property="value")
+)
+def n_pisos(sector):
+    return graph_n_pisos(sector)
 
 
 

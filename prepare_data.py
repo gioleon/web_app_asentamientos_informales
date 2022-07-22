@@ -3,6 +3,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -128,5 +129,3 @@ def graph_servicios_facturados(sector = "all"):
 
 
 graph_servicios_facturados("Nuevo Israel").drop("ninguno", axis = 1)
-
-df.servicios_facturas.apply(lambda x: len(x)).sort_values()
